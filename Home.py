@@ -103,8 +103,9 @@ if len(menu) != 0:
     menu = json.loads(menu[0]["value"])
 
 with home:
+    st.info('To get started, fill in your preferences, then to receive a test email, enter the same email below that and click "Send me today\'s menu updates".')
     with st.form(key="form"):
-        st.write("Enter your phone number to receive updates")
+        st.write("Enter your email to receive updates")
         email = st.text_input("Email Address")
         preferences = st.text_area("Dining Preferences")
         submit = st.form_submit_button("Submit")
@@ -126,7 +127,7 @@ with home:
             ).execute()
             users = supabase.table("user").select("*").execute().data
             st.write(
-                "Thank you for signing up! You will receive updates on the availability of dining halls."
+                "Thanks for signing up! You'll begin to receive updates shortly."
             )
     existing_email = st.text_input(
         "If you already registered...", placeholder="Enter your email address"
@@ -148,7 +149,7 @@ with home:
         notify_users(parse_menu(menu), user)
 
 with admin:
-    pw = st.text_input("Enter the admin password", type="password")
+    pw = st.text_input("Enter admin password", type="password")
     if pw == os.environ.get("ADMIN_PASSWORD"):
         st.write(date)
         if st.button("Randomize / Advance Date"):

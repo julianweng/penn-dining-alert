@@ -1,6 +1,5 @@
-# penn-dining-alert
-
+# Penn Dining Alert
+Eat better with the swipes you have.
 ```bash
-npx convex dev
 streamlit run Home.py
 ```

@@ -110,17 +110,22 @@ def send_email(content: str, to: str):
     from_email = Email("updates@penndiningalert.com")
     to_email = To(to)
     subject = "Your Daily Dining Update"
-    content = Content("text/plain", content)
+    content = Content("text/html", content)
     mail = Mail(from_email, to_email, subject, content)
     mail_json = mail.get()
     return sg.client.mail.send.post(request_body=mail_json)
 
 
 def notify_users(menu, users):
+    if "data" in users:
+        users = users["data"]
     for user in users:
         content = ""
-        print(users)
-        preferences = user["preferences"]
+        if not "preferences" in user:
+            print("no preferences")
+            preferences = "No preferences"
+        else:
+            preferences = user["preferences"]
         prompt = f"""
         You are an intelligent expert on dining halls within UPenn. UPenn dining halls are known for their mixed quality and high variance, so it is important to know what is being served at each dining hall and to take food descriptions with a grain of salt.
         
@@ -172,20 +177,43 @@ def notify_users(menu, users):
                 },
             },
         )
-        print(response.content)
-        print(type(response.content))
         results = json.loads(response.content)
-        formatted_response = ""
-        for dining_hall in results["dining_halls"]:
-            if len(dining_hall["menu_items"]) == 0:
-                continue
-            formatted_response += f"{dining_hall['name']}: {', '.join(dining_hall['menu_items'])}\n"
-        if len(formatted_response) == 0:
-            content = "No items found for your preferences today."
+        html_content = """
+        <html>
+        <body>
+            <p>Hello! Here are some highlights today for dinner options on campus:</p>
+        """
+        found = False
+        # Check if there are any results to display.
+        if not results:
+            html_content += "<p>No items found for your preferences today.</p>"
         else:
-            content = f"""
-            Hello! Here are some highlights today for dinner options on campus.
-            {formatted_response}
-            """
+            # Iterate over each dining hall in the results.
+            for menu in results["dining_halls"]:
+                if len(menu["menu_items"]) == 0:
+                    continue
+                found = True
+                # Add a section for each dining hall with a heading.
+                name = menu["name"]
+                html_content += f"<h2>{name}</h2>"
+                
+                # Check if there are menu items to list.
+                if menu and "menu_items" in menu and menu["menu_items"]:
+                    html_content += "<ul>"
+                    for item in menu["menu_items"]:
+                        # Add each item in a list element.
+                        html_content += f"<li>{item}</li>"
+                    html_content += "</ul>"
+                else:
+                    html_content += "<p>No menu items available.</p>"
+            if not found:
+                html_content = "<p>No items found for your preferences today.</p>"
 
-        send_email(content, user["email"])
+        # Close the HTML tags.
+        html_content += """
+            </body>
+        </html>
+        """
+
+        # Assuming 'user["email"]' is the recipient's email address.
+        send_email(html_content, user["email"])

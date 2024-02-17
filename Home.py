@@ -29,7 +29,7 @@ st.title("Penn Dining Alert")
 
 home, admin = st.tabs(["Home", "Admin"])
 
-users = supabase.table("user").select("*").execute()
+users = supabase.table("user").select("*").execute().data
 date = supabase.table("state").select("value").eq("key", "date").execute().data
 menu = supabase.table("state").select("value").eq("key", "menu").execute().data
 
@@ -84,7 +84,7 @@ def update_time():
     # https://stackoverflow.com/questions/553303/generate-a-random-date-between-two-other-dates
     delta = datetime(2024, 2, 10) - datetime(2024, 1, 20)
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
-    date = datetime(2024, 1, 1) + timedelta(seconds=randrange(int_delta))
+    date = datetime(2024, 1, 10) + timedelta(seconds=randrange(int_delta))
     menu = update_menu(date)
     supabase.table("state").upsert(
         {"key": "date", "value": date.strftime("%Y-%m-%d %H:%M:%S.%f")}
@@ -124,7 +124,7 @@ with home:
             supabase.table("user").upsert(
                 {"email": email, "preferences": preferences}
             ).execute()
-            users = supabase.table("user").select("*").execute()
+            users = supabase.table("user").select("*").execute().data
             st.write(
                 "Thank you for signing up! You will receive updates on the availability of dining halls."
             )
@@ -154,5 +154,7 @@ with admin:
         if st.button("Randomize / Advance Date"):
             update_time()
             st.write("Date updated")
+        if st.button("Send Update to All Users"):
+            notify_users(parse_menu(menu), users)
         st.write(users)
         st.write(parse_menu(menu))
